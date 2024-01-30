@@ -1,0 +1,14 @@
+
+# Ignore python cache files
+*.pyc
+__pycache__/
+/dist/
+
+# Ignore pipenv virtual environment
+.venv/
+
+# Ignore direnv config
+.envrc
+
+# Ignore kubeconfig
+.kube/

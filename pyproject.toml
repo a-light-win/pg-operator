@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "pg-operator"
+version = "0.1.0"
+description = "A k8s operator to manage postgresql database"
+authors = ["Songmin Li <lisongmin@protonmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{ include = "a_light" }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+kopf = "^1.37.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

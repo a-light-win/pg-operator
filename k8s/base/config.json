@@ -1,0 +1,11 @@
+{
+  "instance": {
+    "enabled": true
+  },
+  "database": {
+    "enabled": true
+  },
+  "migration": {
+    "enabled": true
+  }
+}
