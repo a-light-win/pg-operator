@@ -2,6 +2,7 @@
 
 import json
 import pathlib
+import logging
 from dataclasses import dataclass
 import kopf
 
@@ -44,18 +45,12 @@ def configure(memo: PgOperatorMemo, **_):
         memo.database = DatabaseCreationSetting(**data.get("database", {}))
         memo.migration = DatabaseMigrationSetting(**data.get("migration", {}))
 
-        kopf.info(
-            objs={},
-            reason="configuration",
-            message=f'Instance creation is {"enabled" if memo.instance.enabled else "disabled"}',
+        logging.info(
+            f'Instance creation is {"enabled" if memo.instance.enabled else "disabled"}'
         )
-        kopf.info(
-            objs={},
-            reason="configuration",
-            message=f'Database creation is {"enabled" if memo.database.enabled else "disabled"}',
+        logging.info(
+            f'Database creation is {"enabled" if memo.database.enabled else "disabled"}'
         )
-        kopf.info(
-            objs={},
-            reason="configuration",
-            message=f'Database migration is {"enabled" if memo.migration.enabled else "disabled"}',
+        logging.info(
+            f'Database migration is {"enabled" if memo.migration.enabled else "disabled"}'
         )

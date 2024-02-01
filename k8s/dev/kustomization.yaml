@@ -1,0 +1,9 @@
+---
+resources:
+  - ../base
+
+namespace: database-dev
+images:
+  - name: ghcr.io/a-light-win/pg-operator
+    newName: registry.home.2204.win/a-light-win/pg-operator
+    newTag: dev-latest

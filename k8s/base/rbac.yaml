@@ -13,12 +13,12 @@ rules:
   # so we can create a new database for them.
   - apiGroups: [""]
     resources: [deployments, replicasets, pods]
-    verbs: [list, watch, patch, get]
+    verbs: [list, watch, patch, get, create, update, delete]
   # Create a new database for application that has `pg-operator.a_light.win/database=enabled` label
   # and create a secret to save the db owner.
   - apiGroups: [""]
     resources: ["secrets"]
-    verbs: ["create", "patch", "get"]
+    verbs: [create, update, delete, patch, get]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
