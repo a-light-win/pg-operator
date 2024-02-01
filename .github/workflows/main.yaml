@@ -14,12 +14,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Cache dist directory
-        uses: actions/cache@v4
-        with:
-          path: dist
-          key: dist-${{ runner.os }}-{{ github.sha }}
-
       - name: Set up Python
         uses: actions/setup-python@v5
         id: setup-python
@@ -29,7 +23,7 @@ jobs:
       - name: Set up poetry
         uses: snok/install-poetry@v1
         with:
-          poetry-version: 1.7.1
+          version: 1.7.1
           virtualenvs-path: .venv
 
       - name: Cached venv
@@ -72,6 +66,9 @@ jobs:
             type=ref,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+
+      - name: Ensure dist/ exists
+        run: ls dist/
 
       - name: Build and push
         uses: docker/build-push-action@v5
