@@ -71,6 +71,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          cacche-from: |
+            type=local,src=dist
           push: true
           platforms: linux/amd64,linux/arm64
           build-args: |
