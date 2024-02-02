@@ -14,35 +14,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        id: setup-python
-        with:
-          python-version: 3.12
-
-      - name: Set up poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: 1.7.1
-          virtualenvs-path: .venv
-
-      - name: Cached venv
-        id: cached-venv
-        uses: actions/cache@v4
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-
-      - name: Install dependencies if cache miss
-        if: steps.cached-venv.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root
-
-      - name: Build
-        run: poetry build
-
-      - name: Set env VERSION
-        run: echo "VERSION=$(poetry version -s)" >> $GITHUB_ENV
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -55,6 +26,34 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cached builder
+        id: cached-builder
+        uses: actions/cache@v4
+        with:
+          path: .cached-builder
+          key: builder-${{ hashFiles('Dockerfile.builder') }}-${{ hashFiles('poetry.lock') }}
+
+      - name: Build builder if missing
+        if: steps.cached-builder.outputs.cache-hit != 'true'
+        uses: docker/build-push-action@v5
+        with:
+          image: ghcr.io/a-light-win/pg-operator/builder
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ hashFiles('Dockerfile.builder') }}-${{ hashFiles('poetry.lock') }}
+            ${{ github.ref_name }}-latest
+
+      - name: Set cached builder flag
+        if: steps.cached-builder.outputs.cache-hit != 'true'
+        run: |
+          echo "sha: ${GITHUB_SHA}" >> .cached-builder
+
+      - name: Update builder tag in Dockerfile
+        run: |
+          sed -i 's%pg-operator/builder:[^ ]\+%pg-operator/builder:${{ hashFiles('Dockerfile.builder') }}-${{ hashFiles('poetry.lock') }}%' Dockerfile
 
       - name: Set docker meta
         id: meta
@@ -71,10 +70,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          cacche-from: |
-            type=local,src=dist
           push: true
           platforms: linux/amd64,linux/arm64
-          build-args: |
-            VERSION=$VERSION
           tags: ${{ steps.meta.outputs.tags }}
