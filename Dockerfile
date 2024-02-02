@@ -1,4 +1,4 @@
-FROM ghcr.io/a-light-win/pg-operator/builder:${{ hashFiles(Dockerfile.builder) }}-${{ hashFiles(poetry.lock) }} as builder
+FROM ghcr.io/a-light-win/pg-operator/builder:main-latest as builder
 COPY . /app/
 WORKDIR /app/
 RUN poetry build
