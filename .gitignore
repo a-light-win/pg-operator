@@ -3,6 +3,7 @@
 *.pyc
 __pycache__/
 /dist/
+requirements.txt
 
 # Ignore pipenv virtual environment
 .venv/
