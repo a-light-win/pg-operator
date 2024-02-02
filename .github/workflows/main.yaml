@@ -43,8 +43,10 @@ jobs:
 
       - name: Check if builder exists
         run: |
-          if docker manifest inspect ghcr.io/a-light-win/pg-operator/builder:${builder_tag} > /dev/null 2>&1; then
+          if docker manifest inspect ghcr.io/a-light-win/pg-operator/builder:${{ env.BUILDER_TAG }} > /dev/null 2>&1; then
             echo "BUILDER_EXIST=true" >> $GITHUB_ENV
+          else
+            echo "BUILDER_EXIST=false" >> $GITHUB_ENV
           fi
 
       - name: Build builder if missing
