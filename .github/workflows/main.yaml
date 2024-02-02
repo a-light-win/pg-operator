@@ -27,12 +27,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Update the builder tag
+        run: |
+          dockerfile_sha=$(sha256sum Dockerfile.builder | cut -c 1-16)
+          poetry_lock_sha=$(sha256sum poetry.lock | cut -c 1-16)
+          builder_tag=${dockerfile_sha}-${poetry_lock_sha}
+          sed -i 's%pg-operator/builder:[^ ]\+%pg-operator/builder:${builder_tag}%' Dockerfile
+          echo "BUILDER_TAG=${builder_tag}" >> $GITHUB_ENV
+
       - name: Cached builder
         id: cached-builder
         uses: actions/cache@v4
         with:
           path: .cached-builder
-          key: builder-${{ hashFiles('Dockerfile.builder') }}-${{ hashFiles('poetry.lock') }}
+          key: builder-${{ env.BUILDER_TAG }}
 
       - name: Build builder if missing
         if: steps.cached-builder.outputs.cache-hit != 'true'
@@ -43,17 +51,14 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ghcr.io/a-light-win/pg-operator/builder:${{ hashFiles('Dockerfile.builder') }}-${{ hashFiles('poetry.lock') }}
+            ghcr.io/a-light-win/pg-operator/builder:${{ env.BUILDER_TAG }}
             ghcr.io/a-light-win/pg-operator/builder:${{ github.ref_name }}-latest
 
       - name: Set cached builder flag
         if: steps.cached-builder.outputs.cache-hit != 'true'
         run: |
-          echo "sha: ${GITHUB_SHA}" >> .cached-builder
-
-      - name: Update builder tag in Dockerfile
-        run: |
-          sed -i 's%pg-operator/builder:[^ ]\+%pg-operator/builder:${{ hashFiles('Dockerfile.builder') }}-${{ hashFiles('poetry.lock') }}%' Dockerfile
+          echo "git sha: ${GITHUB_SHA}" >> .cached-builder
+          echo "builder tag: ${BUILDER_TAG}" >> .cached-builder
 
       - name: Set docker meta
         id: meta
