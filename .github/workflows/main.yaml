@@ -35,34 +35,30 @@ jobs:
         run: |
           dockerfile_sha=$(sha256sum Dockerfile.builder | cut -c 1-16)
           poetry_lock_sha=$(sha256sum poetry.lock | cut -c 1-16)
-          builder_tag=${dockerfile_sha}-${poetry_lock_sha}
-          sed -i 's%pg-operator/builder:[^ ]\+%pg-operator/builder:${builder_tag}%' Dockerfile
-          echo "BUILDER_TAG=${builder_tag}" >> $GITHUB_ENV
+          echo "BUILDER_TAG=${dockerfile_sha}-${poetry_lock_sha}" >> $GITHUB_ENV
 
-      - name: Cached builder
-        id: cached-builder
-        uses: actions/cache@v4
-        with:
-          path: .cached-builder
-          key: builder-${{ env.BUILDER_TAG }}
+      - name: Update builder tag in Dockerfile
+        run: |
+          sed -i 's%pg-operator/builder:[^ ]\+%pg-operator/builder:${{ env.BUILDER_TAG }}%' Dockerfile
+
+      - name: Check if builder exists
+        run: |
+          if docker manifest inspect ghcr.io/a-light-win/pg-operator/builder:${builder_tag} > /dev/null 2>&1; then
+            echo "BUILDER_EXIST=true" >> $GITHUB_ENV
+          fi
 
       - name: Build builder if missing
-        if: steps.cached-builder.outputs.cache-hit != 'true'
+        if: env.BUILDER_EXIST != 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
           file: Dockerfile.builder
           push: true
+          provenance: false
           platforms: linux/amd64,linux/arm64
           tags: |
             ghcr.io/a-light-win/pg-operator/builder:${{ env.BUILDER_TAG }}
             ghcr.io/a-light-win/pg-operator/builder:${{ github.ref_name }}-latest
-
-      - name: Set cached builder flag
-        if: steps.cached-builder.outputs.cache-hit != 'true'
-        run: |
-          echo "git sha: ${GITHUB_SHA}" >> .cached-builder
-          echo "builder tag: ${BUILDER_TAG}" >> .cached-builder
 
       - name: Set docker meta
         id: meta
@@ -80,5 +76,6 @@ jobs:
         with:
           context: .
           push: true
+          provenance: false
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
