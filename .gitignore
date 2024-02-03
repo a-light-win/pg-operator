@@ -13,3 +13,6 @@ requirements.txt
 
 # Ignore kubeconfig
 .kube/
+
+# Ignore local-dev directory
+local-dev/
