@@ -23,7 +23,7 @@ class DatabaseMigrationSetting:
 
 
 @dataclass
-class PgOperatorMemo:
+class PgOperatorConfig:
     instance: InstanceCreationSetting
     database: DatabaseCreationSetting
     migration: DatabaseMigrationSetting
@@ -32,25 +32,31 @@ class PgOperatorMemo:
     def config_path(cls) -> pathlib.Path:
         return pathlib.Path("/etc/pg-operator/config.json")
 
+    def log_feature_gates(self, logger: logging.Logger):
+        logger.info("Feature gates:")
+        logger.info(
+            f'  Instance creation is {"enabled" if self.instance.enabled else "disabled"}'
+        )
+        logger.info(
+            f'  Database creation is {"enabled" if self.database.enabled else "disabled"}'
+        )
+        logger.info(
+            f'  Database migration is {"enabled" if self.migration.enabled else "disabled"}'
+        )
 
-@kopf.on.startup()
-def configure(memo: PgOperatorMemo, **_):
-    config = PgOperatorMemo.config_path()
+
+@kopf.on.startup()  # type: ignore
+def configuration(logger: logging.Logger, memo: kopf.Memo, **_):
+    config = PgOperatorConfig.config_path()
     if not config.exists():
         return
 
     with config.open() as f:
         data = json.load(f)
-        memo.instance = InstanceCreationSetting(**data.get("instance", {}))
-        memo.database = DatabaseCreationSetting(**data.get("database", {}))
-        memo.migration = DatabaseMigrationSetting(**data.get("migration", {}))
+        instance = InstanceCreationSetting(**data.get("instance", {}))
+        database = DatabaseCreationSetting(**data.get("database", {}))
+        migration = DatabaseMigrationSetting(**data.get("migration", {}))
 
-        logging.info(
-            f'Instance creation is {"enabled" if memo.instance.enabled else "disabled"}'
-        )
-        logging.info(
-            f'Database creation is {"enabled" if memo.database.enabled else "disabled"}'
-        )
-        logging.info(
-            f'Database migration is {"enabled" if memo.migration.enabled else "disabled"}'
-        )
+        memo.config = PgOperatorConfig(instance, database, migration)
+
+        memo.config.log_feature_gates(logger)
