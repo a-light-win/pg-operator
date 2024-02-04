@@ -30,6 +30,9 @@ builder: _dist_dir
 build: builder
   #!/usr/bin/env bash
 
+  bulder_version=$(cat dist/.builder_tag 2>/dev/null)
+  {{ docker_cmd }} run -it --rm -v $(pwd):/app -w /app {{ builder_image_path }}:${bulder_version} poetry build || exit $?
+
   version=$(poetry version -s)
   DEV_TAG=$(sha256sum dist/pg_operator-${version}-py3-none-any.whl| cut -c 1-32)
   
