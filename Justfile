@@ -33,14 +33,6 @@ build: builder
   version=$(poetry version -s)
   DEV_TAG=$(sha256sum dist/pg_operator-${version}-py3-none-any.whl| cut -c 1-32)
   
-  if [ ! -e k8s/local-dev ] ; then
-    cp -a k8s/dev k8s/local-dev
-  fi
-
-  sed -i "s%namespace: .*%namespace: ${DEV_NAMESPACE}%g" k8s/local-dev/kustomization.yaml
-  sed -i "s%newName: .*%newName: ${IMAGE_PATH}%g" k8s/local-dev/kustomization.yaml
-  sed -i "s%newTag: .*%newTag: ${DEV_TAG}%g" k8s/local-dev/kustomization.yaml
-
   # Do not build again if the image is already built
   if [ "$DEV_TAG" = "$(cat dist/.dev_tag 2>/dev/null)" ] ;then
     echo "pg-operator image is already built"
@@ -52,7 +44,19 @@ build: builder
 
   {{ docker_cmd }} push ${IMAGE_PATH}:${DEV_TAG} || exit $?
 
-deploy: build
+_local-dev: build
+  #!/usr/bin/env bash
+  if [ ! -e k8s/local-dev ] ; then
+    cp -a k8s/dev k8s/local-dev
+  fi
+
+  DEV_TAG=$(cat dist/.dev_tag 2>/dev/null)
+
+  sed -i "s%namespace: .*%namespace: ${DEV_NAMESPACE}%g" k8s/local-dev/kustomization.yaml
+  sed -i "s%newName: .*%newName: ${IMAGE_PATH}%g" k8s/local-dev/kustomization.yaml
+  sed -i "s%newTag: .*%newTag: ${DEV_TAG}%g" k8s/local-dev/kustomization.yaml
+
+deploy: build _local-dev
   #!/usr/bin/env bash
 
   if ! kubectl get namespace ${DEV_NAMESPACE} &>/dev/null ; then
